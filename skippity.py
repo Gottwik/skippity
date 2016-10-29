@@ -1,6 +1,5 @@
-
 # we need random to generate the coin flips
-import random
+import random, math
 
 # class defining each node in skiplist
 class skipnode:
@@ -23,31 +22,39 @@ class skipnode:
 				self.next = new_node
 
 				if self.down:
-					# self.skip_count += 1
 					new_node.down = self.down.insert(value, skip_levels - 1)
+
+				base_skip_distance = new_node.get_prev_base_distance()
+				new_node.skip_count = self.skip_count - base_skip_distance
+				self.skip_count = base_skip_distance
+
 				return new_node
+
 			else:
 
 				# just try to insert into the layer below
 				if self.down:
 					self.skip_count += 1
 					return self.down.insert(value, skip_levels - 1)
+
 			return
 
 		# inserting in the middle of the list
-		if self.next.value > value:
+		if self.next.value >= value:
 			if skip_levels <= 0:
 				new_node = skipnode(value, self, self.next)
 
 				self.next.prev = new_node
 				self.next = new_node
-				# new_node.skip_count = self.skip_count
-				# self.skip_count = 0
 
 				# just try to insert into the layer below
 				if self.down:
-					# self.skip_count += 1
 					new_node.down = self.down.insert(value, skip_levels - 1)
+
+				base_skip_distance = new_node.get_prev_base_distance()
+				new_node.skip_count = self.skip_count - base_skip_distance
+				self.skip_count = base_skip_distance
+
 				return new_node
 			else:
 				# just try to insert into the layer below
@@ -134,13 +141,28 @@ class skipnode:
 			return self.next.find_index(index_at + 1 + self.skip_count, index_to_find)
 
 
+	def get_prev_base_distance(self):
+		prev_base_node = self.prev.get_base()
+		n = prev_base_node
+		distance = 0
+		while n.next.value != self.value:
+			distance += 1
+			n = n.next
+
+		return distance
+
+	def get_base(self):
+		n = self
+		while n.down:
+			n = n.down
+		return n
 
 
 
 # main skiplist class
 class skippity:
-	def __init__(self):
-		self.height = 5
+	def __init__(self, expected_items = 20):
+		self.height = math.floor(math.log(expected_items, 2))
 		self.root = skipnode()
 		self.count = 0
 
@@ -205,11 +227,17 @@ class skippity:
 	# returns median of the array
 	def median(self):
 
+		if self.count == 0:
+			return False
+
 		# if count is odd pick the middle
 		if self.count % 2 == 1:
 			return self.root.find_index(0, self.count // 2 + 1)
 		else:
-			return (self.root.find_index(0, self.count // 2) + self.root.find_index(0, self.count // 2 + 1)) / 2
+			median = (self.root.find_index(0, self.count // 2) + self.root.find_index(0, self.count // 2 + 1)) / 2
+			if median % 1 == 0:
+				return int(median)
+			return median
 		# if count is even pick middle two elements and average them
 
 
@@ -227,12 +255,12 @@ class skippity:
 			for i in range(0, full_length):
 				if pos < len(current_list) and full_list[i]['value'] == current_list[pos]['value']:
 					if display_right_count:
-						print('{:3} '.format(current_list[pos]['skip_count']), end = '-')
+						print('{:3} '.format(current_list[pos]['skip_count']), end = '_')
 					else:
-						print('{:3} '.format(full_list[i]['value'] if full_list[i]['value'] else ''), end = '-')
+						print('{:3} '.format(full_list[i]['value'] if full_list[i]['value'] else ''), end = '_')
 					pos += 1
 				else:
-					print('-----', end = '')
+					print('_____', end = '')
 
 			print()
 			do_next = True if n.down is not None else False
@@ -241,21 +269,17 @@ class skippity:
 		print()
 
 
+s = skippity(8)
 
-s = skippity()
-
-s.insert(1, 1)
-s.insert(5, 1)
-s.insert(10, 5)
-
-s.debug(True)
-s.debug()
-
-s.insert(4, 5)
-# s.insert(3, 1)
-# s.insert(2, 3)
-
-s.debug(True)
-s.debug()
+s.insert(1)
+s.insert(2)
+s.insert(3)
+s.insert(4)
+s.insert(5)
+s.insert(6)
+s.insert(7)
 
 # print(s.median())
+
+s.debug(True)
+s.debug()
